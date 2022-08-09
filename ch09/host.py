@@ -16,15 +16,15 @@ from PhaseEstimation import RunGame, RunGameUsingControlledRotations
 from typing import Any
 import scipy.optimize as optimization
 import numpy as np
+import math
 
 BIGGEST_ANGLE = 2 * np.pi
 
-def run_game_at_scales(scales: np.ndarray,
+def run_game_at_scales(hidden_angle: float,
+                       scales: np.ndarray,
                        n_measurements_per_scale: int = 100,
                        control: bool = False
     ) -> Any:
-    hidden_angle = np.random.random() * BIGGEST_ANGLE
-    print(f"Pssst the hidden angle is {hidden_angle}, good luck!")
     return (
         RunGameUsingControlledRotations
         if control else RunGame
@@ -35,10 +35,12 @@ def run_game_at_scales(scales: np.ndarray,
     )
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+  for hidden_angle in np.linspace(0, BIGGEST_ANGLE, 17):
+    # hidden_angle = np.random.random() * BIGGEST_ANGLE
+    print(f"Pssst the hidden angle is {hidden_angle}, good luck!")
     scales = np.linspace(0, 2, 101)
     for control in (False, True):
-        data = run_game_at_scales(scales, control=control)
+        data = run_game_at_scales(hidden_angle, scales, control=control)
 
         def rotation_model(scale, angle):
             return np.sin(angle * scale / 2) ** 2
@@ -46,13 +48,10 @@ if __name__ == "__main__":
             rotation_model, scales, data, BIGGEST_ANGLE / 2,
             bounds=[0, BIGGEST_ANGLE]
         )
-        print(f"The hidden angle you think was {angle_guess}!")
+        print(f"The hidden angle you think was {angle_guess[0]}! (book method)")
 
-        plt.figure()
-        plt.plot(scales, data, 'o')
-        plt.title("Probability of Lancelot measuring One at each scale")
-        plt.xlabel("Lancelot's input scale value")
-        plt.ylabel("Lancelot's probability of measuring a One")
-        plt.plot(scales, rotation_model(scales, angle_guess))
-
-    plt.show()
+        alt_scales = [0.5]
+        data = run_game_at_scales(hidden_angle, alt_scales,
+                n_measurements_per_scale=10000, control=control)
+        angle_guess = math.asin(math.sqrt(data[0])) * 2 / alt_scales[0]
+        print(f"The hidden angle you think was {angle_guess}! (alternative method)")
